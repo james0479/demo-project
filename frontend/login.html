@@ -69,13 +69,49 @@
                 async handleLogin() {
                     this.loading = true;
                     try {
-                        // 这里应该调用Django的登录API
-                        // 由于是演示，我们直接跳转到主页面
-                        setTimeout(() => {
-                            window.location.href = 'index.html';
-                        }, 1000);
+                        // 获取CSRF token
+                        const csrfResponse = await axios.get('http://10.203.41.67:8000/api/get_csrf_token/');
+                        const csrfToken = csrfResponse.data.csrfToken;
+                        
+                        // 设置CSRF token到cookie（用于后续请求）
+                        document.cookie = `csrftoken=${csrfToken}; path=/`;
+                        
+                        // 调用Django登录API
+                        const response = await axios.post('http://10.203.41.67:8000/api-auth/login/', {
+                            username: this.form.username,
+                            password: this.form.password
+                        }, {
+                            headers: {
+                                'X-CSRFToken': csrfToken,
+                                'Content-Type': 'application/json'
+                            },
+                            withCredentials: true
+                        });
+
+                        if (response.status === 200) {
+                            // 登录成功，获取用户信息
+                            const userResponse = await axios.get('http://10.203.41.67:8000/api/auth/user/', {
+                                headers: {
+                                    'X-CSRFToken': csrfToken
+                                },
+                                withCredentials: true
+                            });
+                            
+                            localStorage.setItem('auth_token', 'authenticated');
+                            localStorage.setItem('user_info', JSON.stringify(userResponse.data));
+                            
+                            ElMessage.success('登录成功');
+                            setTimeout(() => {
+                                window.location.href = 'index.html';
+                            }, 1000);
+                        }
                     } catch (error) {
-                        ElMessage.error('登录失败');
+                        console.error('登录错误:', error);
+                        if (error.response?.status === 400) {
+                            ElMessage.error('用户名或密码错误');
+                        } else {
+                            ElMessage.error('登录失败，请检查网络连接');
+                        }
                     } finally {
                         this.loading = false;
                     }

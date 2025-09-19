@@ -47,6 +47,8 @@ api.interceptors.response.use(
     error => {
         if (error.response?.status === 401) {
             ElMessage.error('请先登录');
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user_info');
             window.location.href = '/login.html';
         }
         return Promise.reject(error);
@@ -69,6 +71,7 @@ const App = {
             statusStats: [],
             calendarData: [],
             currentView: 'dashboard',
+            userInfo: null,
 
             // 新增登记功能相关数据
             showCreateDialog: false,
@@ -89,6 +92,11 @@ const App = {
         };
     },
     mounted() {
+        // 加载用户信息
+        const userInfoStr = localStorage.getItem('user_info');
+        if (userInfoStr) {
+            this.userInfo = JSON.parse(userInfoStr);
+        }
         this.loadDashboardData();
     },
     methods: {
@@ -110,6 +118,21 @@ const App = {
             } catch (error) {
                 ElMessage.error('加载数据失败');
                 console.error('Error loading data:', error);
+            }
+        },
+
+        async logout() {
+            try {
+                await api.post('api-auth/logout/');
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user_info');
+                window.location.href = 'login.html';
+            } catch (error) {
+                console.error('登出错误:', error);
+                // 即使登出API失败也清除本地存储
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user_info');
+                window.location.href = 'login.html';
             }
         },
 
@@ -303,11 +326,13 @@ const App = {
                 <div style="display: flex; align-items: center;">
                     <h1 style="margin: 0; font-size: 24px;">🎯 面试管理平台</h1>
                 </div>
-                <div>
-                    <!-- 添加登记按钮 -->
+                <div style="display: flex; align-items: center;">
                     <el-button type="primary" @click="openCreateDialog" style="margin-right: 15px;">
                         📝 登记面试
                     </el-button>
+                    <span style="color: white; margin-right: 15px;">
+                        欢迎，{{ userInfo?.username || '用户' }}
+                    </span>
                     <el-button type="text" style="color: white;" @click="navigateTo('dashboard')">
                         首页
                     </el-button>
@@ -316,6 +341,9 @@ const App = {
                     </el-button>
                     <el-button type="text" style="color: white;" @click="navigateTo('stats')">
                         统计分析
+                    </el-button>
+                    <el-button type="text" style="color: white;" @click="logout">
+                        退出登录
                     </el-button>
                 </div>
             </el-header>

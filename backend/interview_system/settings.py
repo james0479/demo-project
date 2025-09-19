@@ -141,3 +141,22 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.BasicAuthentication',
     ],
 }
+
+
+
+# 允许前端跨域访问
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+# 允许携带凭证
+CORS_ALLOW_CREDENTIALS = True
+
+# Session设置
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_AGE = 1209600  # 2周
+
+# 如果需要允许所有域名（开发环境）
+CORS_ALLOW_ALL_ORIGINS = True

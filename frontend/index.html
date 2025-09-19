@@ -84,6 +84,27 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/element-plus"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    
+    <script>
+    // 检查登录状态
+    function checkLogin() {
+        const token = localStorage.getItem('auth_token');
+        const userInfo = localStorage.getItem('user_info');
+        
+        if (!token || !userInfo) {
+            window.location.href = 'login.html';
+            return false;
+        }
+        return true;
+    }
+
+    // 页面加载时检查
+    if (!checkLogin()) {
+        // 如果未登录，跳转到登录页
+        window.location.href = 'login.html';
+    }
+    </script>
+    
     <script src="src/main.js"></script>
 </body>
 </html>

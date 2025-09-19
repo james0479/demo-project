@@ -6,6 +6,7 @@ from django.db.models import Count, Q, Case, When, IntegerField
 from django.utils import timezone
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
+from django.contrib.auth.models import User
 from .models import Company, JobPosition, Interview
 from .serializers import (
     CompanySerializer, JobPositionSerializer, 
@@ -20,8 +21,7 @@ class CompanyViewSet(viewsets.ModelViewSet):
 class JobPositionViewSet(viewsets.ModelViewSet):
     queryset = JobPosition.objects.all()
     serializer_class = JobPositionSerializer
-    permission_classes = [AllowAny]
-    #permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         queryset = JobPosition.objects.all()
@@ -32,8 +32,7 @@ class JobPositionViewSet(viewsets.ModelViewSet):
 
 class InterviewViewSet(viewsets.ModelViewSet):
     queryset = Interview.objects.all()
-    permission_classes = [AllowAny]
-    #permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         user = self.request.user
@@ -117,16 +116,28 @@ class InterviewViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(interviews, many=True)
         return Response(serializer.data)
 
-## new
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_csrf_token(request):
     """获取CSRF token"""
     return Response({'csrfToken': get_token(request)})
-###
+
 @api_view(['GET'])
-@permission_classes([AllowAny])
-#@permission_classes([IsAuthenticated])
+def current_user(request):
+    """获取当前用户信息"""
+    if request.user.is_authenticated:
+        return Response({
+            'id': request.user.id,
+            'username': request.user.username,
+            'email': request.user.email,
+            'first_name': request.user.first_name,
+            'last_name': request.user.last_name,
+            'is_staff': request.user.is_staff
+        })
+    return Response({'error': '未登录'}, status=status.HTTP_401_UNAUTHORIZED)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def dashboard_stats(request):
     """获取看板统计数据"""
     user = request.user
@@ -169,8 +180,7 @@ def dashboard_stats(request):
     })
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
-#@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated])
 def interview_calendar(request):
     """获取面试日历数据"""
     user = request.user

@@ -2,37 +2,19 @@ Watching for file changes with StatReloader
 Performing system checks...
 
 System check identified no issues (0 silenced).
-September 19, 2025 - 13:46:48
+September 19, 2025 - 15:54:24
 Django version 3.2.16, using settings 'interview_system.settings'
 Starting development server at http://0.0.0.0:8000/
 Quit the server with CONTROL-C.
-[19/Sep/2025 13:46:56] "GET /admin/interviews/studentinfo/ HTTP/1.1" 200 12230
-[19/Sep/2025 13:46:56] "GET /admin/jsi18n/ HTTP/1.1" 200 8398
-[19/Sep/2025 13:47:00] "GET /admin/ HTTP/1.1" 200 6974
-[19/Sep/2025 13:47:03] "GET /admin/logout/ HTTP/1.1" 200 1518
-[19/Sep/2025 13:47:04] "GET /admin/ HTTP/1.1" 302 0
-[19/Sep/2025 13:47:04] "GET /admin/login/?next=/admin/ HTTP/1.1" 200 2216
-[19/Sep/2025 13:47:09] "POST /admin/login/?next=/admin/ HTTP/1.1" 302 0
-[19/Sep/2025 13:47:09] "GET /admin/ HTTP/1.1" 200 6974
-[19/Sep/2025 14:09:35] "GET /admin/ HTTP/1.1" 200 6974
-[19/Sep/2025 14:09:44] "GET /api/get_csrf_token/ HTTP/1.1" 200 80
-[19/Sep/2025 14:09:44] "POST /api-auth/login/ HTTP/1.1" 200 2977
-[19/Sep/2025 14:09:44] "OPTIONS /api/auth/user/ HTTP/1.1" 200 0
-[19/Sep/2025 14:09:44] "GET /api/auth/user/ HTTP/1.1" 200 106
-[19/Sep/2025 14:09:46] "GET /api/dashboard/stats/ HTTP/1.1" 200 315
-[19/Sep/2025 14:09:47] "GET /api/interviews/ HTTP/1.1" 200 5607
-[19/Sep/2025 14:10:10] "OPTIONS /api/api-auth/logout/ HTTP/1.1" 200 0
+[19/Sep/2025 15:54:29] "GET /api/dashboard/stats/ HTTP/1.1" 200 315
+[19/Sep/2025 15:54:29] "GET /api/interviews/ HTTP/1.1" 200 5633
+[19/Sep/2025 15:54:31] "GET /api/interviews/?page=1&page_size=10 HTTP/1.1" 200 5633
 Not Found: /api/api-auth/logout/
-[19/Sep/2025 14:10:10] "POST /api/api-auth/logout/ HTTP/1.1" 404 9157
-[19/Sep/2025 14:10:28] "GET /api/get_csrf_token/ HTTP/1.1" 200 80
-[19/Sep/2025 14:10:28] "POST /api-auth/login/ HTTP/1.1" 200 2977
-[19/Sep/2025 14:10:28] "GET /api/auth/user/ HTTP/1.1" 200 106
-[19/Sep/2025 14:10:29] "GET /api/dashboard/stats/ HTTP/1.1" 200 315
-[19/Sep/2025 14:10:29] "GET /api/interviews/ HTTP/1.1" 200 5607
-Not Found: /api/api-auth/logout/
-[19/Sep/2025 14:10:33] "POST /api/api-auth/logout/ HTTP/1.1" 404 9157
-[19/Sep/2025 14:10:46] "GET /api/get_csrf_token/ HTTP/1.1" 200 80
-[19/Sep/2025 14:10:47] "POST /api-auth/login/ HTTP/1.1" 200 2977
-[19/Sep/2025 14:10:47] "GET /api/auth/user/ HTTP/1.1" 200 106
-[19/Sep/2025 14:10:48] "GET /api/dashboard/stats/ HTTP/1.1" 200 315
-[19/Sep/2025 14:10:48] "GET /api/interviews/ HTTP/1.1" 200 5607
+[19/Sep/2025 15:54:56] "POST /api/api-auth/logout/ HTTP/1.1" 404 9157
+[19/Sep/2025 15:55:23] "GET /api/get_csrf_token/ HTTP/1.1" 200 80
+[19/Sep/2025 15:55:23] "OPTIONS /api-auth/login/ HTTP/1.1" 200 0
+[19/Sep/2025 15:55:23] "POST /api-auth/login/ HTTP/1.1" 200 2977
+[19/Sep/2025 15:55:23] "GET /api/auth/user/ HTTP/1.1" 200 106
+[19/Sep/2025 15:55:25] "GET /api/dashboard/stats/ HTTP/1.1" 200 315
+[19/Sep/2025 15:55:25] "GET /api/interviews/ HTTP/1.1" 200 5633
+[19/Sep/2025 15:55:34] "GET /api/interviews/?page=1&page_size=10 HTTP/1.1" 200 5633

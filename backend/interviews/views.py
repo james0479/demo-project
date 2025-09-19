@@ -1,3 +1,4 @@
+#from rest_framework.pagination import PageNumberPagination
 from rest_framework import viewsets, status, mixins
 from rest_framework.decorators import api_view, action, permission_classes
 from rest_framework.response import Response
@@ -30,14 +31,21 @@ class JobPositionViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(company_id=company_id)
         return queryset
 
+#class StandardPagination(PageNumberPagination):
+#    page_size = 10
+#    page_size_query_param = 'page_size'
+#    max_page_size = 100
+
 class InterviewViewSet(viewsets.ModelViewSet):
     queryset = Interview.objects.all()
     permission_classes = [IsAuthenticated]
-    
+#    pagination_class = StandardPagination
+
     def get_queryset(self):
         user = self.request.user
         queryset = Interview.objects.all()
-        
+#        return queryset.order_by('-scheduled_time')
+
         # 如果是面试官，只能看到自己的面试
         if not user.is_staff:
             queryset = queryset.filter(interviewer=user)

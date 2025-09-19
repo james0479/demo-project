@@ -73,15 +73,41 @@ const App = {
             currentView: 'dashboard',
             userInfo: null,
 
-            // 新增登记功能相关数据
+            // 面试管理相关数据
+            interviewManagement: {
+                interviews: [],
+                loading: false,
+                pagination: {
+                    currentPage: 1,
+                    pageSize: 10,
+                    total: 0
+                },
+                filters: {
+                    status: '',
+                    company: '',
+                    candidate: '',
+                    dateRange: [],
+                    interviewer: ''
+                },
+                sort: {
+                    prop: 'scheduled_time',
+                    order: 'descending'
+                }
+            },
+            interviewDetail: null,
+            showDetailDialog: false,
+            showEditDialog: false,
+            editingInterview: {},
+
+            // 登记功能相关数据
             showCreateDialog: false,
             newInterview: {
                 candidate_name: '',
                 candidate_phone: '',
                 candidate_email: '',
-                company_name: '',          // 改为文本输入
-                position_title: '',        // 改为文本输入
-                position_description: '',  // 新增岗位描述
+                company_name: '',
+                position_title: '',
+                position_description: '',
                 interview_method: 'video',
                 interview_round: 'first',
                 scheduled_time: '',
@@ -136,7 +162,111 @@ const App = {
             }
         },
 
-        // 新增登记功能方法
+        // 面试管理方法
+        async loadInterviewManagement() {
+            this.interviewManagement.loading = true;
+            try {
+                const params = {
+                    page: this.interviewManagement.pagination.currentPage,
+                    page_size: this.interviewManagement.pagination.pageSize
+                };
+
+                // 添加筛选条件
+                if (this.interviewManagement.filters.status) {
+                    params.status = this.interviewManagement.filters.status;
+                }
+                if (this.interviewManagement.filters.company) {
+                    params.company = this.interviewManagement.filters.company;
+                }
+                if (this.interviewManagement.filters.candidate) {
+                    params.candidate_name = this.interviewManagement.filters.candidate;
+                }
+                if (this.interviewManagement.filters.dateRange && this.interviewManagement.filters.dateRange.length === 2) {
+                    params.date_from = this.interviewManagement.filters.dateRange[0];
+                    params.date_to = this.interviewManagement.filters.dateRange[1];
+                }
+
+                const response = await api.get('interviews/', { params });
+                this.interviewManagement.interviews = response.data;
+                this.interviewManagement.pagination.total = response.data.length;
+                
+            } catch (error) {
+                ElMessage.error('加载面试数据失败');
+                console.error('Error loading interviews:', error);
+            } finally {
+                this.interviewManagement.loading = false;
+            }
+        },
+
+        async viewInterviewDetail(interview) {
+            try {
+                const response = await api.get(`interviews/${interview.id}/`);
+                this.interviewDetail = response.data;
+                this.showDetailDialog = true;
+            } catch (error) {
+                ElMessage.error('获取面试详情失败');
+            }
+        },
+
+        async editInterview(interview) {
+            this.editingInterview = { ...interview };
+            this.showEditDialog = true;
+        },
+
+        async updateInterview() {
+            try {
+                await api.patch(`interviews/${this.editingInterview.id}/`, this.editingInterview);
+                ElMessage.success('更新成功');
+                this.showEditDialog = false;
+                this.loadInterviewManagement();
+            } catch (error) {
+                ElMessage.error('更新失败');
+            }
+        },
+
+        async deleteInterview(interviewId) {
+            try {
+                await ElMessageBox.confirm('确定要删除这个面试记录吗？', '确认删除', {
+                    type: 'warning'
+                });
+                
+                await api.delete(`interviews/${interviewId}/`);
+                ElMessage.success('删除成功');
+                this.loadInterviewManagement();
+            } catch (error) {
+                if (error !== 'cancel') {
+                    ElMessage.error('删除失败');
+                }
+            }
+        },
+
+        handleFilter() {
+            this.interviewManagement.pagination.currentPage = 1;
+            this.loadInterviewManagement();
+        },
+
+        handleSortChange(sort) {
+            this.interviewManagement.sort = {
+                prop: sort.prop,
+                order: sort.order
+            };
+            this.loadInterviewManagement();
+        },
+
+        handlePageChange(page) {
+            this.interviewManagement.pagination.currentPage = page;
+            this.loadInterviewManagement();
+        },
+
+        async downloadRecording(interview) {
+            if (interview.recording) {
+                window.open(interview.recording, '_blank');
+            } else {
+                ElMessage.warning('没有录音文件');
+            }
+        },
+
+        // 登记功能方法
         async openCreateDialog() {
             this.showCreateDialog = true;
         },
@@ -153,17 +283,15 @@ const App = {
                     candidate_name: this.newInterview.candidate_name.trim(),
                     candidate_phone: this.newInterview.candidate_phone.trim(),
                     candidate_email: this.newInterview.candidate_email.trim(),
-                    company_name: this.newInterview.company_name.trim(),              // 直接使用文本
-                    position_title: this.newInterview.position_title.trim(),          // 直接使用文本
-                    position_description: this.newInterview.position_description.trim(), // 新增岗位描述
+                    company_name: this.newInterview.company_name.trim(),
+                    position_title: this.newInterview.position_title.trim(),
+                    position_description: this.newInterview.position_description.trim(),
                     interview_method: this.newInterview.interview_method,
                     interview_round: this.newInterview.interview_round,
                     scheduled_time: this.newInterview.scheduled_time,
                     duration: Number(this.newInterview.duration),
                     interviewer_notes: this.newInterview.interviewer_notes.trim()
                 };
-
-                console.log('提交数据:', JSON.stringify(postData, null, 2));
 
                 this.loading = true;
                 const response = await api.post('interviews/', postData);
@@ -176,7 +304,6 @@ const App = {
                 console.error('完整错误信息:', error.response);
                 console.error('错误数据:', error.response?.data);
                 
-                // 更详细的错误处理
                 const errorData = error.response?.data;
                 if (errorData) {
                     if (typeof errorData === 'object') {
@@ -236,11 +363,13 @@ const App = {
             };
         },
 
-        // 原有方法
+        // 导航方法
         navigateTo(view) {
             this.currentView = view;
             if (view === 'dashboard') {
                 this.loadDashboardData();
+            } else if (view === 'interviews') {
+                this.loadInterviewManagement();
             }
         },
 
@@ -459,7 +588,128 @@ const App = {
                     <div v-else-if="currentView === 'interviews'">
                         <div class="dashboard-card">
                             <h3>面试管理</h3>
-                            <p>这里可以显示所有面试的详细管理功能</p>
+                            
+                            <!-- 筛选条件 -->
+                            <el-row :gutter="20" style="margin-bottom: 20px;">
+                                <el-col :span="6">
+                                    <el-input
+                                        v-model="interviewManagement.filters.candidate"
+                                        placeholder="候选人姓名"
+                                        @change="handleFilter"
+                                        clearable
+                                    ></el-input>
+                                </el-col>
+                                <el-col :span="6">
+                                    <el-input
+                                        v-model="interviewManagement.filters.company"
+                                        placeholder="公司名称"
+                                        @change="handleFilter"
+                                        clearable
+                                    ></el-input>
+                                </el-col>
+                                <el-col :span="6">
+                                    <el-select
+                                        v-model="interviewManagement.filters.status"
+                                        placeholder="状态筛选"
+                                        @change="handleFilter"
+                                        clearable
+                                    >
+                                        <el-option label="已安排" value="scheduled"></el-option>
+                                        <el-option label="面试中" value="in_progress"></el-option>
+                                        <el-option label="已完成" value="completed"></el-option>
+                                        <el-option label="已取消" value="cancelled"></el-option>
+                                    </el-select>
+                                </el-col>
+                                <el-col :span="6">
+                                    <el-date-picker
+                                        v-model="interviewManagement.filters.dateRange"
+                                        type="daterange"
+                                        range-separator="至"
+                                        start-placeholder="开始日期"
+                                        end-placeholder="结束日期"
+                                        @change="handleFilter"
+                                        style="width: 100%"
+                                    ></el-date-picker>
+                                </el-col>
+                            </el-row>
+
+                            <!-- 面试表格 -->
+                            <el-table
+                                :data="interviewManagement.interviews"
+                                v-loading="interviewManagement.loading"
+                                @sort-change="handleSortChange"
+                                style="width: 100%"
+                            >
+                                <el-table-column prop="candidate_name" label="候选人" sortable width="120"></el-table-column>
+                                <el-table-column prop="company_name" label="公司" sortable width="150"></el-table-column>
+                                <el-table-column prop="position_title" label="职位" width="150"></el-table-column>
+                                <el-table-column label="面试时间" width="180" sortable="custom">
+                                    <template #default="{row}">
+                                        {{ formatDateTime(row.scheduled_time) }}
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="面试方式" width="100">
+                                    <template #default="{row}">
+                                        {{ row.interview_method === 'phone' ? '电话' : row.interview_method === 'video' ? '视频' : '现场' }}
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="状态" width="100" sortable="custom">
+                                    <template #default="{row}">
+                                        <el-tag :type="getStatusType(row.status)" class="status-tag">
+                                            {{ getStatusText(row.status) }}
+                                        </el-tag>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="结果" width="100" sortable="custom">
+                                    <template #default="{row}">
+                                        <el-tag :type="getStatusType(row.result)" class="status-tag">
+                                            {{ getStatusText(row.result) }}
+                                        </el-tag>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="评分" width="80">
+                                    <template #default="{row}">
+                                        {{ row.score || '-' }}
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="录音" width="80">
+                                    <template #default="{row}">
+                                        <el-icon v-if="row.recording_uploaded" style="color: #67C23A;">
+                                            <el-tooltip content="点击下载录音">
+                                                <el-link :underline="false" @click="downloadRecording(row)">
+                                                    <el-icon><headset /></el-icon>
+                                                </el-link>
+                                            </el-tooltip>
+                                        </el-icon>
+                                        <el-icon v-else style="color: #909399;">
+                                            <el-icon><headset /></el-icon>
+                                        </el-icon>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="操作" width="200" fixed="right">
+                                    <template #default="{row}">
+                                        <el-button size="small" @click="viewInterviewDetail(row)">
+                                            详情
+                                        </el-button>
+                                        <el-button size="small" type="primary" @click="editInterview(row)">
+                                            编辑
+                                        </el-button>
+                                        <el-button size="small" type="danger" @click="deleteInterview(row.id)">
+                                            删除
+                                        </el-button>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+
+                            <!-- 分页 -->
+                            <el-pagination
+                                style="margin-top: 20px;"
+                                :current-page="interviewManagement.pagination.currentPage"
+                                :page-size="interviewManagement.pagination.pageSize"
+                                :total="interviewManagement.pagination.total"
+                                @current-change="handlePageChange"
+                                layout="total, prev, pager, next, jumper"
+                            ></el-pagination>
                         </div>
                     </div>
 
@@ -471,6 +721,112 @@ const App = {
                     </div>
                 </el-main>
             </el-container>
+
+            <!-- 面试详情对话框 -->
+            <el-dialog
+                v-model="showDetailDialog"
+                title="面试详情"
+                width="800px"
+            >
+                <div v-if="interviewDetail">
+                    <el-descriptions :column="2" border>
+                        <el-descriptions-item label="候选人">{{ interviewDetail.candidate_name }}</el-descriptions-item>
+                        <el-descriptions-item label="联系电话">{{ interviewDetail.candidate_phone }}</el-descriptions-item>
+                        <el-descriptions-item label="邮箱">{{ interviewDetail.candidate_email }}</el-descriptions-item>
+                        <el-descriptions-item label="公司">{{ interviewDetail.company_name }}</el-descriptions-item>
+                        <el-descriptions-item label="职位">{{ interviewDetail.position_title }}</el-descriptions-item>
+                        <el-descriptions-item label="面试方式">
+                            {{ interviewDetail.interview_method === 'phone' ? '电话面试' : 
+                               interviewDetail.interview_method === 'video' ? '视频面试' : '现场面试' }}
+                        </el-descriptions-item>
+                        <el-descriptions-item label="面试轮次">
+                            {{ interviewDetail.interview_round === 'first' ? '初试' : 
+                               interviewDetail.interview_round === 'second' ? '二面' : 
+                               interviewDetail.interview_round === 'third' ? '三面' : '终面' }}
+                        </el-descriptions-item>
+                        <el-descriptions-item label="面试时间">{{ formatDateTime(interviewDetail.scheduled_time) }}</el-descriptions-item>
+                        <el-descriptions-item label="预计时长">{{ interviewDetail.duration }}分钟</el-descriptions-item>
+                        <el-descriptions-item label="状态">
+                            <el-tag :type="getStatusType(interviewDetail.status)">
+                                {{ getStatusText(interviewDetail.status) }}
+                            </el-tag>
+                        </el-descriptions-item>
+                        <el-descriptions-item label="结果">
+                            <el-tag :type="getStatusType(interviewDetail.result)">
+                                {{ getStatusText(interviewDetail.result) }}
+                            </el-tag>
+                        </el-descriptions-item>
+                        <el-descriptions-item label="评分">{{ interviewDetail.score || '未评分' }}</el-descriptions-item>
+                    </el-descriptions>
+
+                    <el-divider></el-divider>
+
+                    <h4>面试反馈</h4>
+                    <el-input
+                        :model-value="interviewDetail.feedback"
+                        type="textarea"
+                        :rows="4"
+                        readonly
+                        placeholder="暂无反馈"
+                    ></el-input>
+
+                    <h4 style="margin-top: 20px;">面试官备注</h4>
+                    <el-input
+                        :model-value="interviewDetail.interviewer_notes"
+                        type="textarea"
+                        :rows="3"
+                        readonly
+                        placeholder="暂无备注"
+                    ></el-input>
+                </div>
+            </el-dialog>
+
+            <!-- 编辑面试对话框 -->
+            <el-dialog
+                v-model="showEditDialog"
+                title="编辑面试信息"
+                width="600px"
+            >
+                <el-form :model="editingInterview" label-width="100px">
+                    <el-form-item label="状态">
+                        <el-select v-model="editingInterview.status">
+                            <el-option label="已安排" value="scheduled"></el-option>
+                            <el-option label="面试中" value="in_progress"></el-option>
+                            <el-option label="已完成" value="completed"></el-option>
+                            <el-option label="已取消" value="cancelled"></el-option>
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="结果">
+                        <el-select v-model="editingInterview.result">
+                            <el-option label="待定" value="pending"></el-option>
+                            <el-option label="通过" value="passed"></el-option>
+                            <el-option label="未通过" value="rejected"></el-option>
+                            <el-option label="发放Offer" value="offer"></el-option>
+                            <el-option label="已拒绝" value="declined"></el-option>
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="评分">
+                        <el-input-number
+                            v-model="editingInterview.score"
+                            :min="1"
+                            :max="100"
+                            controls-position="right"
+                        ></el-input-number>
+                    </el-form-item>
+                    <el-form-item label="面试反馈">
+                        <el-input
+                            v-model="editingInterview.feedback"
+                            type="textarea"
+                            :rows="4"
+                            placeholder="请输入面试反馈"
+                        ></el-input>
+                    </el-form-item>
+                </el-form>
+                <template #footer>
+                    <el-button @click="showEditDialog = false">取消</el-button>
+                    <el-button type="primary" @click="updateInterview">保存</el-button>
+                </template>
+            </el-dialog>
 
             <!-- 登记面试对话框 -->
             <el-dialog
